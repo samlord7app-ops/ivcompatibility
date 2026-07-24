@@ -20,10 +20,10 @@
                     <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-2">
                         <span>💉</span> IV Compatibility Checker
                     </h1>
-                    <p class="text-indigo-200 text-xs md:text-sm mt-1">多重藥物/輸液交叉比對系統（支援自由文字搜尋與 6+ 欄位比對）</p>
+                    <p class="text-indigo-200 text-xs md:text-sm mt-1">多重藥物/輸液交叉比對系統（具備拼字自動校正與模糊比對）</p>
                 </div>
                 <div class="bg-indigo-800/60 backdrop-blur px-3 py-1.5 rounded-lg border border-indigo-500/30 text-xs text-indigo-100 self-start md:self-auto">
-                    支持自由輸入 (Free Text) & 多藥物矩陣比對
+                    支持拼字錯字自動校正 (Typo Tolerance)
                 </div>
             </div>
         </header>
@@ -47,7 +47,7 @@
             <div>
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="text-sm font-bold text-slate-700 flex items-center gap-1.5">
-                        <span>🔍</span> 輸入欲查詢之藥物與輸液（自由文字輸入，可搭配選單自動補全）
+                        <span>🔍</span> 輸入欲查詢之藥物與輸液（打錯字如 callcium choride 會自動自動修正）
                     </h2>
                     <button onclick="addInputField()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-200 transition">
                         ＋ 新增欄位
@@ -56,16 +56,15 @@
 
                 <!-- Input Grid (Default 6 slots) -->
                 <div id="inputContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <!-- JavaScript will generate 6 inputs dynamically -->
+                    <!-- Dynamic inputs will be inserted here -->
                 </div>
-                <!-- Datalist for Auto-complete / Search Suggestion -->
                 <datalist id="drugSuggestions"></datalist>
             </div>
 
             <!-- Action Buttons -->
             <div class="flex flex-wrap justify-center gap-3">
                 <button onclick="checkAllCompatibility()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl shadow-md hover:shadow-indigo-200 transition flex items-center gap-2 w-full sm:w-auto justify-center">
-                    <span>⚡</span> 執行多藥物交叉比對
+                    <span>⚡</span> 執行多藥物/輸液交叉比對
                 </button>
                 <button onclick="clearAllInputs()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium py-3 px-5 rounded-xl transition w-full sm:w-auto text-center">
                     清空欄位
@@ -76,10 +75,10 @@
 
             <!-- Quick Scenario Presets -->
             <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">多藥物測試範例（點擊一鍵帶入）</h3>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">錯字測試範例（點擊一鍵帶入）</h3>
                 <div class="flex flex-wrap gap-2">
-                    <button onclick="loadScenarioScenario1()" class="text-xs bg-white border border-slate-300 hover:border-indigo-400 px-3 py-1.5 rounded-lg transition">範例：ICU 常用 5 藥 + D5W 輸液</button>
-                    <button onclick="loadScenarioScenario2()" class="text-xs bg-white border border-slate-300 hover:border-indigo-400 px-3 py-1.5 rounded-lg transition">範例：頭孢子素與鈣鹽風險測試</button>
+                    <button onclick="loadTypoScenario1()" class="text-xs bg-white border border-slate-300 hover:border-indigo-400 px-3 py-1.5 rounded-lg transition">錯字測試：callcium choride + ceftriaxn</button>
+                    <button onclick="loadTypoScenario2()" class="text-xs bg-white border border-slate-300 hover:border-indigo-400 px-3 py-1.5 rounded-lg transition">錯字測試：midazlam + furosmede</button>
                 </div>
             </div>
 
@@ -102,66 +101,86 @@
 
         <!-- Footer -->
         <footer class="bg-slate-50 border-t border-slate-200 p-4 text-center text-xs text-slate-500">
-            臨床提醒：自由輸入查詢會自動對應藥物英文與常見縮寫。若為全新或特殊調配藥物，請務必核對原始文獻與藥品說明書。
+            臨床提醒：系統已啟用模糊拼字比對（Levenshtein Distance），若輸入包含輕微拼字錯誤將會自動進行最接近藥名的修正輔助。
         </footer>
     </div>
 
-    <!-- JavaScript Engine -->
+    <!-- JavaScript Engine with Fuzzy Search Algorithm -->
     <script>
-        // 擴充藥物資料庫（支援別名與模糊比對）
         const dbDrugs = [
-            { id: "NS", name: "0.9% Normal Saline", aliases: ["ns", "normal saline", "0.9% nacl", "saline", "生理食鹽水", "食鹽水"] },
-            { id: "D5W", name: "D5W (5% Dextrose)", aliases: ["d5w", "d5", "dextrose", "5% dextrose", "葡萄糖", "5%葡萄糖"] },
-            { id: "LR", name: "Lactated Ringer's (LR)", aliases: ["lr", "lactated ringers", "ringers", "乳酸林格氏液"] },
+            // --- Crystalloids ---
+            { id: "D5W", name: "D5W (5% Dextrose in Water)", aliases: ["d5w", "5% dextrose", "5% dextrose in water", "d5", "葡萄糖液"] },
+            { id: "D2.5_0.45NS", name: "2.5% Dextrose in 0.45% NaCl", aliases: ["2.5% dextrose/0.45% nacl", "d2.5/0.45% nacl", "d2.5 1/2 ns", "d2.5/0.45% ns"] },
+            { id: "Ringer", name: "Ringer's Solution", aliases: ["ringer's solution", "ringers solution", "ringers", "林格氏液"] },
+            { id: "LR", name: "Lactated Ringer's Solution", aliases: ["lactated ringer's solution", "lactated ringers", "lr", "hartmann's solution", "hartmanns solution", "乳酸林格氏液"] },
+            { id: "0.9NS", name: "0.9% NaCl (Normal Saline)", aliases: ["0.9% nacl", "0.9% saline", "normal saline", "ns", "sodium chloride", "生理食鹽水"] },
+            { id: "Hypertonic_Saline", name: "Hypertonic Saline (3%, 5%, 7.2% NaCl)", aliases: ["3% nacl", "5% nacl", "7.2% nacl", "hypertonic saline", "3% saline"] },
+
+            // --- Common IV Medications & Electrolytes ---
+            { id: "Calcium_Chloride", name: "Calcium Chloride", aliases: ["calcium chloride", "calcium choride", "callcium chloride", "callcium choride", "氯化鈣"] },
+            { id: "Calcium_Gluconate", name: "Calcium Gluconate", aliases: ["calcium gluconate", "calcium", "葡萄糖酸鈣", "鈣劑"] },
             { id: "Ceftriaxone", name: "Ceftriaxone", aliases: ["ceftriaxone", "rocephin", "頭孢子素", "羅氏芬"] },
-            { id: "Calcium Gluconate", name: "Calcium Gluconate", aliases: ["calcium", "calcium gluconate", "葡萄糖酸鈣", "鈣劑"] },
             { id: "Phenytoin", name: "Phenytoin", aliases: ["phenytoin", "dilantin", "帝蘭汀"] },
             { id: "Furosemide", name: "Furosemide", aliases: ["furosemide", "lasix", "利尿劑"] },
             { id: "Amiodarone", name: "Amiodarone", aliases: ["amiodarone", "cordarone", "廣德隆"] },
             { id: "Midazolam", name: "Midazolam", aliases: ["midazolam", "dormicum", "鎮靜劑"] },
-            { id: "KCl", name: "Potassium Chloride", aliases: ["kcl", "potassium chloride", "potassium", "氯化鉀"] },
-            { id: "NaHCO3", name: "Sodium Bicarbonate", aliases: ["nahco3", "bicarbonate", "soda", "重碳酸鈉", "小蘇打"] },
-            { id: "Vancomycin", name: "Vancomycin", aliases: ["vancocin", "vancomycin", "萬古黴素"] },
-            { id: "Insulin", name: "Insulin (Regular)", aliases: ["insulin", "ri", "regular insulin", "胰島素"] },
-            { id: "Norepinephrine", name: "Norepinephrine", aliases: ["levophed", "ne", "norepinephrine", "昇壓素"] },
-            { id: "Milrinone", name: "Milrinone", aliases: ["primacor", "milrinone"] },
-            { id: "Propofol", name: "Propofol", aliases: ["diprivan", "propofol", "牛奶針"] }
+            { id: "KCl", name: "Potassium Chloride", aliases: ["potassium chloride", "kcl", "氯化鉀"] },
+            { id: "NaHCO3", name: "Sodium Bicarbonate", aliases: ["sodium bicarbonate", "nahco3", "bicarbonate", "重碳酸鈉", "小蘇打"] }
         ];
 
-        // 兩兩相容性規則庫
         const compatibilityRules = [
-            { a: "Ceftriaxone", b: "Calcium Gluconate", status: "Incompatible", mechanism: "生成不溶性 ceftriaxone-calcium 結晶沉澱，具器官栓塞致死風險。", action: "嚴禁同一袋混合或同一管路 Y-site 共輸！請更換獨立管路。" },
-            { a: "Ceftriaxone", b: "Lactated Ringer's (LR)", status: "Incompatible", mechanism: "LR 內含鈣離子，會與 Ceftriaxone 形成沉澱。", action: "不可使用 LR 進行稀釋或共輸。" },
-            { a: "Phenytoin", b: "D5W (5% Dextrose)", status: "Incompatible", mechanism: "Phenytoin 為高鹼性（pH~12），在偏酸性 D5W 中會快速結晶析出。", action: "嚴禁使用 D5W！必須使用 0.9% Normal Saline 稀釋。" },
+            { a: "Ceftriaxone", b: "Calcium_Gluconate", status: "Incompatible", mechanism: "生成不溶性 ceftriaxone-calcium 結晶沉澱，具致死性器官栓塞風險。", action: "嚴禁同一袋混合或同一管路 Y-site 共輸！請更換獨立管路。" },
+            { a: "Ceftriaxone", b: "Calcium_Chloride", status: "Incompatible", mechanism: "生成不溶性 ceftriaxone-calcium 沉澱，屬嚴重靜脈禁忌。", action: "嚴禁同一管路或同袋共輸！" },
+            { a: "Ceftriaxone", b: "LR", status: "Incompatible", mechanism: "LR 內含有鈣離子（Calcium），會與 Ceftriaxone 形成結晶沉澱。", action: "不可使用 LR 或含鈣輸液進行稀釋或共輸。" },
+            { a: "Phenytoin", b: "D5W", status: "Incompatible", mechanism: "Phenytoin 為高鹼性（pH~12），在偏酸性 D5W 中會快速結晶析出。", action: "嚴禁使用 D5W！必須使用 0.9% NaCl 稀釋。" },
             { a: "Furosemide", b: "Midazolam", status: "Incompatible", mechanism: "酸鹼中和沉澱（Furosemide 為鹼性，Midazolam 為酸性）。", action: "禁止 Y-site 共輸，若經同一管路需以 0.9% NS 充分沖管。" },
-            { a: "Furosemide", b: "Milrinone", status: "Incompatible", mechanism: "酸鹼不相容，會立即產生白色渾濁沉澱。", action: "應分開不同管路給予。" },
-            { a: "Sodium Bicarbonate", b: "Calcium Gluconate", status: "Incompatible", mechanism: "生成碳酸鈣（Calcium Carbonate）白色沉澱。", action: "嚴禁同一管路給予。" },
-            { a: "Amiodarone", b: "D5W (5% Dextrose)", status: "Compatible", mechanism: "化學與物理穩定性良好。", action: "Amiodarone 滴注首選稀釋輸液為 D5W。" },
-            { a: "Potassium Chloride", b: "0.9% Normal Saline", status: "Compatible", mechanism: "物理化學性質穩定。", action: "混合時請務必充分搖勻。" },
-            { a: "Norepinephrine", b: "D5W (5% Dextrose)", status: "Compatible", mechanism: "D5W 可防止氧化降解。", action: "建議優先使用 D5W 或 D5NS 稀釋。" },
-            { a: "Insulin (Regular)", b: "0.9% Normal Saline", status: "Compatible", mechanism: "物理性穩定，但需注意管路吸附現象。", action: "給藥前建議先用少量溶液沖洗管路以飽和吸附位點。" }
+            { a: "NaHCO3", b: "Calcium_Gluconate", status: "Incompatible", mechanism: "生成碳酸鈣（Calcium Carbonate）白色沉澱。", action: "嚴禁同一管路或輸液袋混合。" },
+            { a: "NaHCO3", b: "Calcium_Chloride", status: "Incompatible", mechanism: "生成碳酸鈣白色沉澱。", action: "嚴禁同一管路給予。" },
+            { a: "Amiodarone", b: "D5W", status: "Compatible", mechanism: "物理與化學穩定性良好。", action: "Amiodarone 靜脈滴注首選稀釋輸液為 D5W。" },
+            { a: "KCl", b: "0.9NS", status: "Compatible", mechanism: "物理化學性質穩定。", action: "混合時請務必充分搖勻。" }
         ];
 
         let currentMode = "Y-site";
         let inputCount = 0;
 
-        // 初始化：預設建立 6 個輸入框
+        function levenshteinDistance(a, b) {
+            const matrix = [];
+            for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+            for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+
+            for (let i = 1; i <= b.length; i++) {
+                for (let j = 1; j <= a.length; j++) {
+                    if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(
+                            matrix[i - 1][j - 1] + 1,
+                            matrix[i][j - 1] + 1,
+                            matrix[i - 1][j] + 1
+                        );
+                    }
+                }
+            }
+            return matrix[b.length][a.length];
+        }
+
         function initInputs() {
-            // Populate Datalist suggestions
             const datalist = document.getElementById("drugSuggestions");
+            datalist.innerHTML = "";
             dbDrugs.forEach(drug => {
                 let opt = document.createElement("option");
                 opt.value = drug.name;
                 datalist.appendChild(opt);
             });
 
-            // Create 6 default input slots
+            const container = document.getElementById("inputContainer");
+            container.innerHTML = "";
+            inputCount = 0;
             for (let i = 0; i < 6; i++) {
                 addInputField();
             }
         }
 
-        // 新增單一輸入框
         function addInputField(value = "") {
             inputCount++;
             const container = document.getElementById("inputContainer");
@@ -172,7 +191,7 @@
             div.innerHTML = `
                 <div class="absolute left-3 text-slate-400 text-xs font-bold">#${inputCount}</div>
                 <input type="text" id="input_${inputCount}" list="drugSuggestions" value="${value}" 
-                    placeholder="輸入藥物/輸液 (如 NS, Lasix...)" 
+                    placeholder="輸入藥物/輸液 (允許拼錯，如 callcium choride...)" 
                     class="w-full bg-slate-50 hover:bg-white focus:bg-white border border-slate-300 rounded-lg py-2.5 pl-9 pr-8 text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm" />
                 <button onclick="removeInputField(${inputCount})" class="absolute right-2 text-slate-400 hover:text-red-500 text-sm p-1 rounded transition" title="刪除欄位">
                     ✕
@@ -181,20 +200,17 @@
             container.appendChild(div);
         }
 
-        // 移除欄位
         function removeInputField(id) {
             const el = document.getElementById(`inputWrapper_${id}`);
             if (el) el.remove();
         }
 
-        // 清空所有欄位內容
         function clearAllInputs() {
             const inputs = document.querySelectorAll("#inputContainer input");
             inputs.forEach(input => input.value = "");
             document.getElementById("resultSection").classList.add("hidden");
         }
 
-        // 切換情境
         function setMode(mode) {
             currentMode = mode;
             const btnY = document.getElementById("modeYsite");
@@ -208,31 +224,52 @@
             }
         }
 
-        // 自由文字解析（Free Text Parser：比對名稱與別名）
-        function matchDrugInDB(rawText) {
+        function matchDrugInDBWithFuzzy(rawText) {
             if (!rawText || !rawText.trim()) return null;
             const cleanText = rawText.trim().toLowerCase();
 
-            // 1. 精準與別名搜尋
             for (let drug of dbDrugs) {
-                if (drug.name.toLowerCase() === cleanText) return drug.name;
+                if (drug.name.toLowerCase() === cleanText) return { id: drug.id, autoCorrected: false };
                 for (let alias of drug.aliases) {
-                    if (alias.toLowerCase() === cleanText) return drug.name;
-                }
-            }
-            // 2. 模糊包含搜尋 (Partial Match)
-            for (let drug of dbDrugs) {
-                if (drug.name.toLowerCase().includes(cleanText)) return drug.name;
-                for (let alias of drug.aliases) {
-                    if (cleanText.includes(alias.toLowerCase())) return drug.name;
+                    if (alias.toLowerCase() === cleanText) return { id: drug.id, autoCorrected: false };
                 }
             }
 
-            // 若找不到，直接回傳使用者輸入的原文字（保留 Free text 彈性）
-            return rawText.trim();
+            for (let drug of dbDrugs) {
+                if (drug.name.toLowerCase().includes(cleanText)) return { id: drug.id, autoCorrected: false };
+                for (let alias of drug.aliases) {
+                    if (cleanText.includes(alias.toLowerCase())) return { id: drug.id, autoCorrected: false };
+                }
+            }
+
+            let bestMatch = null;
+            let minDistance = Infinity;
+
+            for (let drug of dbDrugs) {
+                const candidates = [drug.name.toLowerCase(), ...drug.aliases.map(a => a.toLowerCase())];
+                for (let cand of candidates) {
+                    const dist = levenshteinDistance(cleanText, cand);
+                    const allowedDist = cleanText.length > 8 ? 4 : (cleanText.length > 4 ? 2 : 1);
+
+                    if (dist < minDistance && dist <= allowedDist) {
+                        minDistance = dist;
+                        bestMatch = drug.id;
+                    }
+                }
+            }
+
+            if (bestMatch) {
+                return { id: bestMatch, autoCorrected: true };
+            }
+
+            return { id: rawText.trim(), autoCorrected: false };
         }
 
-        // 核心邏輯：進行 N 藥物 兩兩交叉比對
+        function getDrugDisplayName(idOrRaw) {
+            const found = dbDrugs.find(d => d.id === idOrRaw);
+            return found ? found.name : idOrRaw;
+        }
+
         function checkAllCompatibility() {
             const inputs = document.querySelectorAll("#inputContainer input");
             let rawList = [];
@@ -248,10 +285,15 @@
                 return;
             }
 
-            // 解析為標準藥物名稱
-            const parsedList = rawList.map(item => ({ raw: item, matched: matchDrugInDB(item) }));
+            const parsedList = rawList.map(item => {
+                const matchResult = matchDrugInDBWithFuzzy(item);
+                return {
+                    raw: item,
+                    matchedId: matchResult.id,
+                    autoCorrected: matchResult.autoCorrected
+                };
+            });
 
-            // 產生兩兩組合 (Combinations)
             let pairs = [];
             for (let i = 0; i < parsedList.length; i++) {
                 for (let j = i + 1; j < parsedList.length; j++) {
@@ -259,20 +301,21 @@
                 }
             }
 
-            // 比對資料庫
             let results = pairs.map(pair => {
-                const nameA = pair.itemA.matched;
-                const nameB = pair.itemB.matched;
+                const idA = pair.itemA.matchedId;
+                const idB = pair.itemB.matchedId;
 
                 const foundRule = compatibilityRules.find(rule => 
-                    (rule.a === nameA && rule.b === nameB) || (rule.a === nameB && rule.b === nameA)
+                    (rule.a === idA && rule.b === idB) || (rule.a === idB && rule.b === idA)
                 );
 
                 return {
                     rawA: pair.itemA.raw,
                     rawB: pair.itemB.raw,
-                    matchedA: nameA,
-                    matchedB: nameB,
+                    displayA: getDrugDisplayName(idA),
+                    displayB: getDrugDisplayName(idB),
+                    autoCorrectedA: pair.itemA.autoCorrected,
+                    autoCorrectedB: pair.itemB.autoCorrected,
                     rule: foundRule || null
                 };
             });
@@ -280,7 +323,6 @@
             renderResults(results, rawList.length);
         }
 
-        // 渲染結果 UI
         function renderResults(results, drugCount) {
             const section = document.getElementById("resultSection");
             const listContainer = document.getElementById("resultsList");
@@ -297,14 +339,24 @@
                 const card = document.createElement("div");
                 card.className = "p-4 rounded-xl border transition shadow-sm bg-white";
 
+                let autoCorrectNotice = "";
+                if (res.autoCorrectedA || res.autoCorrectedB) {
+                    autoCorrectNotice = `<div class="text-[11px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 mt-1 inline-block">
+                        💡 系統已為您修正錯字拼寫：[${res.rawA} ➔ ${res.displayA}] / [${res.rawB} ➔ ${res.displayB}]
+                    </div>`;
+                }
+
                 if (res.rule) {
                     if (res.rule.status === "Incompatible") {
                         incompatibleCount++;
                         card.classList.add("border-red-300", "bg-red-50/50");
                         card.innerHTML = `
                             <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-red-200/80 pb-2 mb-2">
-                                <div class="font-bold text-red-700 text-base">
-                                    ⛔ 不相容：${res.matchedA} ＋ ${res.matchedB}
+                                <div>
+                                    <div class="font-bold text-red-700 text-base">
+                                        ⛔ 不相容：${res.displayA} ＋ ${res.displayB}
+                                    </div>
+                                    ${autoCorrectNotice}
                                 </div>
                                 <span class="text-xs bg-red-600 text-white px-2.5 py-0.5 rounded-full font-bold self-start md:self-auto">Incompatible</span>
                             </div>
@@ -318,8 +370,11 @@
                         card.classList.add("border-emerald-300", "bg-emerald-50/30");
                         card.innerHTML = `
                             <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-emerald-200/80 pb-2 mb-2">
-                                <div class="font-bold text-emerald-800 text-base">
-                                    ✅ 相容：${res.matchedA} ＋ ${res.matchedB}
+                                <div>
+                                    <div class="font-bold text-emerald-800 text-base">
+                                        ✅ 相容：${res.displayA} ＋ ${res.displayB}
+                                    </div>
+                                    ${autoCorrectNotice}
                                 </div>
                                 <span class="text-xs bg-emerald-600 text-white px-2.5 py-0.5 rounded-full font-bold self-start md:self-auto">Compatible</span>
                             </div>
@@ -334,27 +389,28 @@
                     card.classList.add("border-slate-200", "bg-slate-50");
                     card.innerHTML = `
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-200 pb-2 mb-2">
-                            <div class="font-bold text-slate-700 text-base">
-                                ⚠️ 缺乏直接數據：${res.matchedA} ＋ ${res.matchedB}
+                            <div>
+                                <div class="font-bold text-slate-700 text-base">
+                                    ⚠️ 缺乏直接數據：${res.displayA} ＋ ${res.displayB}
+                                </div>
+                                ${autoCorrectNotice}
                             </div>
                             <span class="text-xs bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full font-bold self-start md:self-auto">Unknown / Variable</span>
                         </div>
                         <div class="text-xs text-slate-600">
-                            本資料庫未收錄此特定組合。在缺乏文獻佐證前，建議視為不相容，並於給藥之間以至少 10–20 mL 0.9% Normal Saline 充分沖洗管路。
+                            本資料庫尚未收錄此特定組合。在缺乏文獻佐證前，建議視為不相容，並於給藥之間以至少 10–20 mL 0.9% Normal Saline 充分沖洗管路。
                         </div>
                     `;
                 }
                 listContainer.appendChild(card);
             });
 
-            // 總結 Badge
-            summaryBadge.innerHTML = `共比對 ${drugCount} 項藥物 (${results.length} 組組合) ➔ <span class="text-red-600 font-bold">${incompatibleCount} 禁忌</span> | <span class="text-emerald-600 font-bold">${compatibleCount} 相容</span> | <span class="text-slate-500">${unknownCount} 查無資料</span>`;
+            summaryBadge.innerHTML = `共比對 ${drugCount} 項 (${results.length} 組組合) ➔ <span class="text-red-600 font-bold">${incompatibleCount} 禁忌</span> | <span class="text-emerald-600 font-bold">${compatibleCount} 相容</span> | <span class="text-slate-500">${unknownCount} 查無資料</span>`;
         }
 
-        // 預設範例載入
-        function loadScenarioScenario1() {
+        function loadTypoScenario1() {
             clearAllInputs();
-            const sample = ["D5W", "Amiodarone", "Furosemide", "Midazolam", "KCl", "Ceftriaxone"];
+            const sample = ["callcium choride", "ceftriaxn"];
             const inputs = document.querySelectorAll("#inputContainer input");
             sample.forEach((val, index) => {
                 if (inputs[index]) inputs[index].value = val;
@@ -362,9 +418,9 @@
             checkAllCompatibility();
         }
 
-        function loadScenarioScenario2() {
+        function loadTypoScenario2() {
             clearAllInputs();
-            const sample = ["Ceftriaxone", "Calcium Gluconate", "LR", "Normal Saline"];
+            const sample = ["midazlam", "furosmede"];
             const inputs = document.querySelectorAll("#inputContainer input");
             sample.forEach((val, index) => {
                 if (inputs[index]) inputs[index].value = val;
@@ -372,7 +428,6 @@
             checkAllCompatibility();
         }
 
-        // 初始化頁面
         window.onload = initInputs;
     </script>
 </body>
