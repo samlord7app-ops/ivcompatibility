@@ -20,10 +20,10 @@
                     <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-2">
                         <span>💉</span> IV Compatibility Checker
                     </h1>
-                    <p class="text-indigo-200 text-xs md:text-sm mt-1">多重藥物/輸液交叉比對系統（具備拼字自動校正與模糊比對）</p>
+                    <p class="text-indigo-200 text-xs md:text-sm mt-1">多重藥物/輸液交叉比對系統（已整合 General / Critical Care / TPN 臨床文獻）</p>
                 </div>
                 <div class="bg-indigo-800/60 backdrop-blur px-3 py-1.5 rounded-lg border border-indigo-500/30 text-xs text-indigo-100 self-start md:self-auto">
-                    支持拼字錯字自動校正 (Typo Tolerance)
+                    防誤判模糊比對 & TPN 模式支援
                 </div>
             </div>
         </header>
@@ -31,7 +31,7 @@
         <!-- Main Content -->
         <div class="p-4 md:p-6 space-y-6">
             
-            <!-- Context Control & Instructions -->
+            <!-- Context Control -->
             <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h2 class="text-sm font-bold text-slate-700">選擇給藥情境 (Mode)</h2>
@@ -43,20 +43,20 @@
                 </div>
             </div>
 
-            <!-- Dynamic Input Fields Area (Default 6 slots) -->
+            <!-- Dynamic Input Fields Area -->
             <div>
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="text-sm font-bold text-slate-700 flex items-center gap-1.5">
-                        <span>🔍</span> 輸入欲查詢之藥物與輸液（打錯字如 callcium choride 會自動自動修正）
+                        <span>🔍</span> 輸入欲查詢之藥物與輸液（可輸入如 TPN, Dexmedetomidine, Vancomycin...）
                     </h2>
                     <button onclick="addInputField()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-200 transition">
                         ＋ 新增欄位
                     </button>
                 </div>
 
-                <!-- Input Grid (Default 6 slots) -->
+                <!-- Input Grid -->
                 <div id="inputContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <!-- Dynamic inputs will be inserted here -->
+                    <!-- Dynamic inputs -->
                 </div>
                 <datalist id="drugSuggestions"></datalist>
             </div>
@@ -73,12 +73,13 @@
 
             <hr class="border-slate-200" />
 
-            <!-- Quick Scenario Presets -->
+            <!-- Quick Presets -->
             <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">錯字測試範例（點擊一鍵帶入）</h3>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">快速測試文獻案例（點擊帶入）</h3>
                 <div class="flex flex-wrap gap-2">
-                    <button onclick="loadTypoScenario1()" class="text-xs bg-white border border-slate-300 hover:border-indigo-400 px-3 py-1.5 rounded-lg transition">錯字測試：callcium choride + ceftriaxn</button>
-                    <button onclick="loadTypoScenario2()" class="text-xs bg-white border border-slate-300 hover:border-indigo-400 px-3 py-1.5 rounded-lg transition">錯字測試：midazlam + furosmede</button>
+                    <button onclick="loadPreset1()" class="text-xs bg-white border border-slate-300 hover:border-indigo-400 px-3 py-1.5 rounded-lg transition">重症案例：Dexmedetomidine + Norepinephrine + Furosemide</button>
+                    <button onclick="loadPreset2()" class="text-xs bg-white border border-slate-300 hover:border-indigo-400 px-3 py-1.5 rounded-lg transition">TPN 案例：TPN (3-in-1) + Ceftriaxone + Midazolam</button>
+                    <button onclick="loadPreset3()" class="text-xs bg-white border border-slate-300 hover:border-indigo-400 px-3 py-1.5 rounded-lg transition">抗生素/電解質：Vancomycin + NaHCO3 + Piperacillin-tazobactam</button>
                 </div>
             </div>
 
@@ -101,43 +102,108 @@
 
         <!-- Footer -->
         <footer class="bg-slate-50 border-t border-slate-200 p-4 text-center text-xs text-slate-500">
-            臨床提醒：系統已啟用模糊拼字比對（Levenshtein Distance），若輸入包含輕微拼字錯誤將會自動進行最接近藥名的修正輔助。
+            數據來源：BC Women's Hospital / VCH-PHC Y-Site Injection Drug Compatibility Charts (General, Critical Care, TPN) & Trissel's Handbook of Injectable Drugs.
         </footer>
     </div>
 
-    <!-- JavaScript Engine with Fuzzy Search Algorithm -->
     <script>
+        // 擴充後的藥物資料庫
         const dbDrugs = [
-            // --- Crystalloids ---
-            { id: "D5W", name: "D5W (5% Dextrose in Water)", aliases: ["d5w", "5% dextrose", "5% dextrose in water", "d5", "葡萄糖液"] },
-            { id: "D2.5_0.45NS", name: "2.5% Dextrose in 0.45% NaCl", aliases: ["2.5% dextrose/0.45% nacl", "d2.5/0.45% nacl", "d2.5 1/2 ns", "d2.5/0.45% ns"] },
-            { id: "Ringer", name: "Ringer's Solution", aliases: ["ringer's solution", "ringers solution", "ringers", "林格氏液"] },
-            { id: "LR", name: "Lactated Ringer's Solution", aliases: ["lactated ringer's solution", "lactated ringers", "lr", "hartmann's solution", "hartmanns solution", "乳酸林格氏液"] },
-            { id: "0.9NS", name: "0.9% NaCl (Normal Saline)", aliases: ["0.9% nacl", "0.9% saline", "normal saline", "ns", "sodium chloride", "生理食鹽水"] },
-            { id: "Hypertonic_Saline", name: "Hypertonic Saline (3%, 5%, 7.2% NaCl)", aliases: ["3% nacl", "5% nacl", "7.2% nacl", "hypertonic saline", "3% saline"] },
+            // --- Crystalloids & TPN ---
+            { id: "D5W", name: "D5W (5% Dextrose in Water)", aliases: ["d5w", "5% dextrose", "葡萄糖液"] },
+            { id: "0.9NS", name: "0.9% NaCl (Normal Saline)", aliases: ["0.9% nacl", "normal saline", "ns", "生理食鹽水"] },
+            { id: "LR", name: "Lactated Ringer's Solution", aliases: ["lactated ringers", "lr", "乳酸林格氏液"] },
+            { id: "PLASMA-LYTE_A", name: "PLASMA-LYTE A", aliases: ["plasma-lyte a", "plasma lyte", "plasmalyte"] },
+            { id: "TPN_3in1", name: "TPN (3-in-1 Total Nutrient Admixture)", aliases: ["tpn 3-in-1", "tpn 3 in 1", "tna", "3-in-1 tpn", "三合一靜脈營養"] },
+            { id: "TPN_2in1", name: "TPN (2-in-1 Dextrose/Amino Acids)", aliases: ["tpn 2-in-1", "tpn 2 in 1", "2-in-1 tpn", "二合一靜脈營養"] },
 
-            // --- Common IV Medications & Electrolytes ---
-            { id: "Calcium_Chloride", name: "Calcium Chloride", aliases: ["calcium chloride", "calcium choride", "callcium chloride", "callcium choride", "氯化鈣"] },
-            { id: "Calcium_Gluconate", name: "Calcium Gluconate", aliases: ["calcium gluconate", "calcium", "葡萄糖酸鈣", "鈣劑"] },
-            { id: "Ceftriaxone", name: "Ceftriaxone", aliases: ["ceftriaxone", "rocephin", "頭孢子素", "羅氏芬"] },
-            { id: "Phenytoin", name: "Phenytoin", aliases: ["phenytoin", "dilantin", "帝蘭汀"] },
-            { id: "Furosemide", name: "Furosemide", aliases: ["furosemide", "lasix", "利尿劑"] },
-            { id: "Amiodarone", name: "Amiodarone", aliases: ["amiodarone", "cordarone", "廣德隆"] },
-            { id: "Midazolam", name: "Midazolam", aliases: ["midazolam", "dormicum", "鎮靜劑"] },
+            // --- Sedatives, Analgesics & Anesthetics ---
+            { id: "Morphine", name: "Morphine Sulfate", aliases: ["morphine", "嗎啡"] },
+            { id: "Hydromorphone", name: "Hydromorphone", aliases: ["hydromorphone", "dilaudid"] },
+            { id: "Fentanyl", name: "Fentanyl", aliases: ["fentanyl", "sublimaze", "芬太尼"] },
+            { id: "Remifentanil", name: "Remifentanil", aliases: ["remifentanil", "ultiva"] },
+            { id: "Midazolam", name: "Midazolam", aliases: ["midazolam", "dormicum"] },
+            { id: "Propofol", name: "Propofol", aliases: ["propofol", "diprivan", "牛奶針"] },
+            { id: "Dexmedetomidine", name: "Dexmedetomidine", aliases: ["dexmedetomidine", "precedex"] },
+            { id: "Ketamine", name: "Ketamine", aliases: ["ketamine"] },
+            { id: "Lorazepam", name: "Lorazepam", aliases: ["lorazepam", "ativan"] },
+            { id: "Rocuronium", name: "Rocuronium", aliases: ["rocuronium", "zemuron"] },
+
+            // --- Inotropes & Vasopressors ---
+            { id: "Norepinephrine", name: "Norepinephrine", aliases: ["norepinephrine", "levophed", "ne", "正腎上腺素"] },
+            { id: "Epinephrine", name: "Epinephrine", aliases: ["epinephrine", "adrenaline", "腎上腺素"] },
+            { id: "Dopamine", name: "Dopamine", aliases: ["dopamine", "多巴胺"] },
+            { id: "Dobutamine", name: "Dobutamine", aliases: ["dobutamine"] },
+            { id: "Vasopressin", name: "Vasopressin", aliases: ["vasopressin", "pitressin"] },
+            { id: "Milrinone", name: "Milrinone", aliases: ["milrinone", "primacor"] },
+            { id: "Nitroglycerin", name: "Nitroglycerin", aliases: ["nitroglycerin", "ntg"] },
+            { id: "Nitroprusside", name: "Nitroprusside Sodium", aliases: ["nitroprusside", "nipride"] },
+            { id: "Hydralazine", name: "Hydralazine", aliases: ["hydralazine"] },
+            { id: "Labetalol", name: "Labetalol", aliases: ["labetalol"] },
+
+            // --- Anti-infectives ---
+            { id: "Vancomycin", name: "Vancomycin", aliases: ["vancomycin", "vancocin", "萬古黴素"] },
+            { id: "Piperacillin_Tazobactam", name: "Piperacillin-Tazobactam", aliases: ["piperacillin-tazobactam", "pip-tazo", "zosyn", "taocin"] },
+            { id: "Meropenem", name: "Meropenem", aliases: ["meropenem", "merrem"] },
+            { id: "Metronidazole", name: "Metronidazole", aliases: ["metronidazole", "flagyl"] },
+            { id: "Ceftriaxone", name: "Ceftriaxone", aliases: ["ceftriaxone", "rocephin"] },
+            { id: "Cefazolin", name: "Cefazolin", aliases: ["cefazolin", "ancef"] },
+            { id: "Ceftazidime", name: "Ceftazidime", aliases: ["ceftazidime", "fortaz"] },
+            { id: "Cefuroxime", name: "Cefuroxime", aliases: ["cefuroxime", "zinacef"] },
+            { id: "Ciprofloxacin", name: "Ciprofloxacin", aliases: ["ciprofloxacin", "cipro"] },
+            { id: "Clindamycin", name: "Clindamycin", aliases: ["clindamycin", "cleocin"] },
+            { id: "Gentamicin", name: "Gentamicin", aliases: ["gentamicin"] },
+            { id: "Tobramycin", name: "Tobramycin", aliases: ["tobramycin"] },
+            { id: "Acyclovir", name: "Acyclovir", aliases: ["acyclovir", "zovirax"] },
+            { id: "Ampicillin", name: "Ampicillin", aliases: ["ampicillin"] },
+            { id: "Fluconazole", name: "Fluconazole", aliases: ["fluconazole", "diflucan"] },
+
+            // --- Electrolytes, Diuretics & Others ---
+            { id: "Calcium_Gluconate", name: "Calcium Gluconate", aliases: ["calcium gluconate", "葡萄糖酸鈣"] },
+            { id: "Calcium_Chloride", name: "Calcium Chloride", aliases: ["calcium chloride", "氯化鈣"] },
+            { id: "Furosemide", name: "Furosemide", aliases: ["furosemide", "lasix"] },
             { id: "KCl", name: "Potassium Chloride", aliases: ["potassium chloride", "kcl", "氯化鉀"] },
-            { id: "NaHCO3", name: "Sodium Bicarbonate", aliases: ["sodium bicarbonate", "nahco3", "bicarbonate", "重碳酸鈉", "小蘇打"] }
+            { id: "K_Phos", name: "Potassium Phosphate", aliases: ["potassium phosphate", "k phosphate"] },
+            { id: "NaHCO3", name: "Sodium Bicarbonate", aliases: ["sodium bicarbonate", "nahco3", "重碳酸鈉"] },
+            { id: "MgSO4", name: "Magnesium Sulfate", aliases: ["magnesium sulfate", "mgso4", "硫酸鎂"] },
+            { id: "Heparin", name: "Heparin", aliases: ["heparin", "肝素"] },
+            { id: "Insulin", name: "Insulin Regular", aliases: ["insulin", "regular insulin", "ri"] },
+            { id: "Amiodarone", name: "Amiodarone", aliases: ["amiodarone", "cordarone"] },
+            { id: "Phenytoin", name: "Phenytoin", aliases: ["phenytoin", "dilantin"] }
         ];
 
+        // 整合自 4 份 PDF 圖表的相容性資料庫
         const compatibilityRules = [
-            { a: "Ceftriaxone", b: "Calcium_Gluconate", status: "Incompatible", mechanism: "生成不溶性 ceftriaxone-calcium 結晶沉澱，具致死性器官栓塞風險。", action: "嚴禁同一袋混合或同一管路 Y-site 共輸！請更換獨立管路。" },
-            { a: "Ceftriaxone", b: "Calcium_Chloride", status: "Incompatible", mechanism: "生成不溶性 ceftriaxone-calcium 沉澱，屬嚴重靜脈禁忌。", action: "嚴禁同一管路或同袋共輸！" },
-            { a: "Ceftriaxone", b: "LR", status: "Incompatible", mechanism: "LR 內含有鈣離子（Calcium），會與 Ceftriaxone 形成結晶沉澱。", action: "不可使用 LR 或含鈣輸液進行稀釋或共輸。" },
-            { a: "Phenytoin", b: "D5W", status: "Incompatible", mechanism: "Phenytoin 為高鹼性（pH~12），在偏酸性 D5W 中會快速結晶析出。", action: "嚴禁使用 D5W！必須使用 0.9% NaCl 稀釋。" },
-            { a: "Furosemide", b: "Midazolam", status: "Incompatible", mechanism: "酸鹼中和沉澱（Furosemide 為鹼性，Midazolam 為酸性）。", action: "禁止 Y-site 共輸，若經同一管路需以 0.9% NS 充分沖管。" },
-            { a: "NaHCO3", b: "Calcium_Gluconate", status: "Incompatible", mechanism: "生成碳酸鈣（Calcium Carbonate）白色沉澱。", action: "嚴禁同一管路或輸液袋混合。" },
+            // --- 重症與靜脈輸液/電解質禁忌 ---
+            { a: "Ceftriaxone", b: "Calcium_Gluconate", status: "Incompatible", mechanism: "生成不溶性 Ceftriaxone-Calcium 結晶沉澱，具致死性器官栓塞風險。", action: "嚴禁同一袋混合或同一管路 Y-site 共輸！" },
+            { a: "Ceftriaxone", b: "Calcium_Chloride", status: "Incompatible", mechanism: "生成不溶性 Ceftriaxone-Calcium 沉澱。", action: "嚴禁同一管路或同袋共輸！" },
+            { a: "Ceftriaxone", b: "LR", status: "Incompatible", mechanism: "LR 含鈣離子（Calcium），會與 Ceftriaxone 形成結晶沉澱。", action: "不可使用 LR 或含鈣輸液進行稀釋或共輸。" },
+            { a: "Phenytoin", b: "D5W", status: "Incompatible", mechanism: "Phenytoin 為高鹼性，在偏酸性 D5W 中會快速結晶析出。", action: "嚴禁使用 D5W！必須使用 0.9% NaCl 稀釋。" },
+            { a: "Furosemide", b: "Midazolam", status: "Incompatible", mechanism: "酸鹼中和沉澱（Furosemide 偏鹼，Midazolam 偏酸）。", action: "禁止 Y-site 共輸，若經同一管路需以 0.9% NS 充分沖管。" },
+            { a: "Furosemide", b: "Milrinone", status: "Incompatible", mechanism: "會立即產生沉澱物。", action: "禁止 Y-site 共輸。" },
+            { a: "Furosemide", b: "Morphine", status: "Incompatible", mechanism: "易產生渾濁或沉澱。", action: "不建議同一管路共輸，中間需以 NS 沖管。" },
+            { a: "NaHCO3", b: "Calcium_Gluconate", status: "Incompatible", mechanism: "生成碳酸鈣（Calcium Carbonate）白色沉澱。", action: "嚴禁同一管路給予。" },
             { a: "NaHCO3", b: "Calcium_Chloride", status: "Incompatible", mechanism: "生成碳酸鈣白色沉澱。", action: "嚴禁同一管路給予。" },
-            { a: "Amiodarone", b: "D5W", status: "Compatible", mechanism: "物理與化學穩定性良好。", action: "Amiodarone 靜脈滴注首選稀釋輸液為 D5W。" },
-            { a: "KCl", b: "0.9NS", status: "Compatible", mechanism: "物理化學性質穩定。", action: "混合時請務必充分搖勻。" }
+            { a: "NaHCO3", b: "Vancomycin", status: "Incompatible", mechanism: "鹼性 NaHCO3 會降低 Vancomycin 穩定性並產生沉澱。", action: "避免 Y-site 共輸。" },
+
+            // --- TPN (3-in-1 / 2-in-1) 專屬數據 (來自 VCH-PHC TPN Chart) ---
+            { a: "TPN_3in1", b: "Ceftriaxone", status: "Incompatible", mechanism: "與 TPN 中鈣離子或脂肪乳劑破乳化產生禁忌。", action: "嚴禁 Y-site 共輸！" },
+            { a: "TPN_3in1", b: "Midazolam", status: "Incompatible", mechanism: "影響脂肪乳劑（Intralipid）穩定性與產生沉澱。", action: "嚴禁 Y-site 共輸。" },
+            { a: "TPN_3in1", b: "Hydromorphone", status: "Incompatible", mechanism: "不相容於三合一靜脈營養。", action: "請改由獨立管路給予。" },
+            { a: "TPN_3in1", b: "Ondansetron", status: "Incompatible", mechanism: "破壞脂肪乳劑穩定性。", action: "禁止共輸。" },
+            { a: "TPN_3in1", b: "Vancomycin", status: "Compatible", mechanism: "文獻顯示於規定濃度下 Y-site 共輸相容。", action: "可進行 Y-site 共輸，請注意觀察管路。" },
+            { a: "TPN_3in1", b: "Propofol", status: "Compatible", mechanism: "可相容於二合一 TPN (但若含 Lipid 需注意總脂質負荷)。", action: "可進行 Y-site 共輸。" },
+            { a: "TPN_3in1", b: "Dexmedetomidine", status: "Compatible", mechanism: "物理性與化學性相容。", action: "可 Y-site 共輸。" },
+
+            // --- Critical Care 重症藥物相容性數據 ---
+            { a: "Dexmedetomidine", b: "Norepinephrine", status: "Compatible", mechanism: "重症常用組合，物理與化學相容性良好。", action: "可經由 Y-site 共輸。" },
+            { a: "Dexmedetomidine", b: "Propofol", status: "Compatible", mechanism: "鎮靜藥物組合，Y-site 相容。", action: "可經由 Y-site 共輸。" },
+            { a: "Dexmedetomidine", b: "Fentanyl", status: "Compatible", mechanism: "鎮痛鎮靜組合，Y-site 相容。", action: "可經由 Y-site 共輸。" },
+            { a: "Norepinephrine", b: "Vasopressin", status: "Compatible", mechanism: "升壓素組合，物理化學性質相容。", action: "可經由 Y-site 共輸。" },
+            { a: "Norepinephrine", b: "Dobutamine", status: "Compatible", mechanism: "強心升壓組合，Y-site 相容。", action: "可經由 Y-site 共輸。" },
+            { a: "Vancomycin", b: "Piperacillin_Tazobactam", status: "Incompatible", mechanism: "易在管路中形成白色沉澱（特別是高濃度時）。", action: "建議避免 Y-site 共輸；若經同一管路給藥，給藥間務必以 NS 充分沖管。" },
+            { a: "Vancomycin", b: "Meropenem", status: "Compatible", mechanism: "文獻顯示於標準濃度下 Y-site 相容。", action: "可經由 Y-site 共輸。" },
+            { a: "Propofol", b: "Remifentanil", status: "Compatible", mechanism: "麻醉重症常用組合，Y-site 相容。", action: "可經由 Y-site 共輸。" }
         ];
 
         let currentMode = "Y-site";
@@ -191,7 +257,7 @@
             div.innerHTML = `
                 <div class="absolute left-3 text-slate-400 text-xs font-bold">#${inputCount}</div>
                 <input type="text" id="input_${inputCount}" list="drugSuggestions" value="${value}" 
-                    placeholder="輸入藥物/輸液 (允許拼錯，如 callcium choride...)" 
+                    placeholder="輸入藥物/輸液名稱..." 
                     class="w-full bg-slate-50 hover:bg-white focus:bg-white border border-slate-300 rounded-lg py-2.5 pl-9 pr-8 text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm" />
                 <button onclick="removeInputField(${inputCount})" class="absolute right-2 text-slate-400 hover:text-red-500 text-sm p-1 rounded transition" title="刪除欄位">
                     ✕
@@ -228,6 +294,7 @@
             if (!rawText || !rawText.trim()) return null;
             const cleanText = rawText.trim().toLowerCase();
 
+            // 1. 精準匹配
             for (let drug of dbDrugs) {
                 if (drug.name.toLowerCase() === cleanText) return { id: drug.id, autoCorrected: false };
                 for (let alias of drug.aliases) {
@@ -235,23 +302,25 @@
                 }
             }
 
+            // 2. 開頭/包含匹配
             for (let drug of dbDrugs) {
-                if (drug.name.toLowerCase().includes(cleanText)) return { id: drug.id, autoCorrected: false };
+                if (drug.name.toLowerCase().startsWith(cleanText)) return { id: drug.id, autoCorrected: false };
                 for (let alias of drug.aliases) {
-                    if (cleanText.includes(alias.toLowerCase())) return { id: drug.id, autoCorrected: false };
+                    if (alias.toLowerCase().startsWith(cleanText)) return { id: drug.id, autoCorrected: false };
                 }
             }
 
+            // 3. 防誤判的 Levenshtein Distance
             let bestMatch = null;
             let minDistance = Infinity;
 
             for (let drug of dbDrugs) {
                 const candidates = [drug.name.toLowerCase(), ...drug.aliases.map(a => a.toLowerCase())];
                 for (let cand of candidates) {
-                    const dist = levenshteinDistance(cleanText, cand);
-                    const allowedDist = cleanText.length > 8 ? 4 : (cleanText.length > 4 ? 2 : 1);
-
-                    if (dist < minDistance && dist <= allowedDist) {
+                    let penalty = (cleanText[0] !== cand[0]) ? 3 : 0;
+                    const dist = levenshteinDistance(cleanText, cand) + penalty;
+                    
+                    if (dist < minDistance && dist <= 2) {
                         minDistance = dist;
                         bestMatch = drug.id;
                     }
@@ -342,7 +411,7 @@
                 let autoCorrectNotice = "";
                 if (res.autoCorrectedA || res.autoCorrectedB) {
                     autoCorrectNotice = `<div class="text-[11px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 mt-1 inline-block">
-                        💡 系統已為您修正錯字拼寫：[${res.rawA} ➔ ${res.displayA}] / [${res.rawB} ➔ ${res.displayB}]
+                        💡 系統已為您自動修正拼寫
                     </div>`;
                 }
 
@@ -398,33 +467,38 @@
                             <span class="text-xs bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full font-bold self-start md:self-auto">Unknown / Variable</span>
                         </div>
                         <div class="text-xs text-slate-600">
-                            本資料庫尚未收錄此特定組合。在缺乏文獻佐證前，建議視為不相容，並於給藥之間以至少 10–20 mL 0.9% Normal Saline 充分沖洗管路。
+                            文獻資料庫中缺乏此組合的直接數據。臨床上建議視為不相容，若需經同一管路給藥，請於前後以 0.9% Normal Saline 充分沖洗管路。
                         </div>
                     `;
                 }
                 listContainer.appendChild(card);
             });
 
-            summaryBadge.innerHTML = `共比對 ${drugCount} 項 (${results.length} 組組合) ➔ <span class="text-red-600 font-bold">${incompatibleCount} 禁忌</span> | <span class="text-emerald-600 font-bold">${compatibleCount} 相容</span> | <span class="text-slate-500">${unknownCount} 查無資料</span>`;
+            summaryBadge.innerHTML = `共比對 ${drugCount} 項 (${results.length} 組組合) ➔ <span class="text-red-600 font-bold">${incompatibleCount} 禁忌</span> | <span class="text-emerald-600 font-bold">${compatibleCount} 相容</span> | <span class="text-slate-500">${unknownCount} 查無數據</span>`;
         }
 
-        function loadTypoScenario1() {
+        // 快速預設情境
+        function loadPreset1() {
             clearAllInputs();
-            const sample = ["callcium choride", "ceftriaxn"];
+            const sample = ["Dexmedetomidine", "Norepinephrine", "Furosemide"];
             const inputs = document.querySelectorAll("#inputContainer input");
-            sample.forEach((val, index) => {
-                if (inputs[index]) inputs[index].value = val;
-            });
+            sample.forEach((val, index) => { if (inputs[index]) inputs[index].value = val; });
             checkAllCompatibility();
         }
 
-        function loadTypoScenario2() {
+        function loadPreset2() {
             clearAllInputs();
-            const sample = ["midazlam", "furosmede"];
+            const sample = ["TPN (3-in-1 Total Nutrient Admixture)", "Ceftriaxone", "Midazolam"];
             const inputs = document.querySelectorAll("#inputContainer input");
-            sample.forEach((val, index) => {
-                if (inputs[index]) inputs[index].value = val;
-            });
+            sample.forEach((val, index) => { if (inputs[index]) inputs[index].value = val; });
+            checkAllCompatibility();
+        }
+
+        function loadPreset3() {
+            clearAllInputs();
+            const sample = ["Vancomycin", "Sodium Bicarbonate", "Piperacillin-Tazobactam"];
+            const inputs = document.querySelectorAll("#inputContainer input");
+            sample.forEach((val, index) => { if (inputs[index]) inputs[index].value = val; });
             checkAllCompatibility();
         }
 
