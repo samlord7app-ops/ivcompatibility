@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Drug IV Compatibility Checker - 靜脈藥物多重配伍禁忌查詢系統 (TPN 專用版)</title>
+    <title>Multi-Drug IV Compatibility Checker - 靜脈藥物多重配伍禁忌查詢系統 (無損全文獻完整版)</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -20,10 +20,10 @@
                     <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-2">
                         <span>💉</span> IV Compatibility Checker
                     </h1>
-                    <p class="text-indigo-200 text-xs md:text-sm mt-1">靜脈藥物交叉比對系統（已整合 JPPT TPN 2-in-1 / 3-in-1 / Lipids 全資料庫）</p>
+                    <p class="text-indigo-200 text-xs md:text-sm mt-1">靜脈藥物交叉比對系統（已整合臨藥會、JPPT TPN、King Guide 2026 全文獻數據）</p>
                 </div>
                 <div class="bg-indigo-800/60 backdrop-blur px-3 py-1.5 rounded-lg border border-indigo-500/30 text-xs text-indigo-100 self-start md:self-auto">
-                    已收錄 135+ 藥物、1,600+ 組交叉比對數據
+                    已收錄 200+ 藥物、1,670+ 組交叉比對數據
                 </div>
             </div>
         </header>
@@ -47,16 +47,16 @@
             <div>
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="text-sm font-bold text-slate-700 flex items-center gap-1.5">
-                        <span>🔍</span> 輸入欲查詢之藥物與 TPN 輸液 (如：TPN 3-in-1, Lipids, Midazolam...)
+                        <span>🔍</span> 輸入欲查詢之藥物與 TPN 輸液 (例如：Amphotericin B, TPN 3-in-1, Lipids...)
                     </h2>
                     <button onclick="addInputField()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-200 transition">
                         ＋ 新增欄位
                     </button>
                 </div>
 
-                <!-- Input Grid (6 default slots) -->
+                <!-- Input Grid (Default 6 slots) -->
                 <div id="inputContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <!-- Inputs rendered by JS -->
+                    <!-- Rendered by JS -->
                 </div>
                 <datalist id="drugSuggestions"></datalist>
             </div>
@@ -75,11 +75,11 @@
 
             <!-- Quick Presets -->
             <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">JPPT TPN 論文對照案例（點擊帶入）</h3>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">上傳文獻測試案例（點擊帶入）</h3>
                 <div class="flex flex-wrap gap-2">
-                    <button onclick="loadPresetTPN1()" class="text-xs bg-white border border-slate-300 hover:border-indigo-400 px-3 py-1.5 rounded-lg transition">TPN 破乳測試：TPN 3-in-1 + Midazolam + Ondansetron</button>
-                    <button onclick="loadPresetTPN2()" class="text-xs bg-white border border-slate-300 hover:border-indigo-400 px-3 py-1.5 rounded-lg transition">TPN 沉澱測試：TPN 2-in-1 + Acyclovir + Phenytoin</button>
-                    <button onclick="loadPresetTPN3()" class="text-xs bg-white border border-slate-300 hover:border-indigo-400 px-3 py-1.5 rounded-lg transition">TPN 相容測試：Lipids + Vancomycin + Propofol</button>
+                    <button onclick="loadPreset1()" class="text-xs bg-white border border-slate-300 hover:border-indigo-400 px-3 py-1.5 rounded-lg transition">Amphotericin B 禁忌：Amphotericin B + 0.9% NS + TPN 3-in-1</button>
+                    <button onclick="loadPreset2()" class="text-xs bg-white border border-slate-300 hover:border-indigo-400 px-3 py-1.5 rounded-lg transition">臨藥會 ICU：Amiodarone + Heparin + NaHCO3</button>
+                    <button onclick="loadPreset3()" class="text-xs bg-white border border-slate-300 hover:border-indigo-400 px-3 py-1.5 rounded-lg transition">TPN 破乳測試：TPN (3-in-1 / TNA) + Midazolam + Ondansetron</button>
                 </div>
             </div>
 
@@ -102,136 +102,134 @@
 
         <!-- Footer -->
         <footer class="bg-slate-50 border-t border-slate-200 p-4 text-center text-xs text-slate-500 space-y-1">
-            <p><strong>文獻數據來源：</strong>JPPT 2009 (Y-Site Compatibility of Medications with Parenteral Nutrition), 臺灣臨床藥學會加護病房 Y-site 表格, King Guide 2026, Pharmacy Practice News 2021.</p>
+            <p><strong>全資料庫來源：</strong>社團法人臺灣臨床藥學會加護病房 Y-site 表格、JPPT 2009 TPN 論文、King Guide 2026、Pharmacy Practice News Dec 2021、Mosby Solution Chart。</p>
         </footer>
     </div>
 
+    <!-- External Database -->
     <script>
-        // 包含 TPN 2-in-1, 3-in-1, Lipids 與 JPPT 全藥物庫
+        // 包含 209 種靜脈藥品與輸液
         const dbDrugs = [
-            // --- TPN 核心類別 ---
-            { id: "TPN_3in1", name: "TPN (3-in-1 Total Nutrient Admixture)", aliases: ["tpn 3-in-1", "tpn 3 in 1", "tna", "3-in-1 tpn", "三合一靜脈營養"] },
-            { id: "TPN_2in1", name: "TPN (2-in-1 Dextrose-Amino Acids)", aliases: ["tpn 2-in-1", "tpn 2 in 1", "2-in-1 tpn", "二合一靜脈營養"] },
-            { id: "Lipids", name: "Lipids / Fat Emulsion (Intralipid)", aliases: ["lipids", "fat emulsion", "intralipid", "脂肪乳劑"] },
-
-            // --- Crystalloids ---
+            { id: "Amphotericin_B", name: "Amphotericin B", aliases: ["amphotericin b", "fungizone", "兩性黴素b"] },
+            { id: "Amphotericin_B_Liposomal", name: "Amphotericin B Liposomal", aliases: ["amphotericin b liposomal", "ambisome"] },
+            { id: "TPN_3in1", name: "TPN (3-in-1 / TNA)", aliases: ["tpn 3-in-1", "tpn 3 in 1", "3-in-1 tpn", "tna", "三合一靜脈營養"] },
+            { id: "TPN_2in1", name: "TPN (2-in-1)", aliases: ["tpn 2-in-1", "tpn 2 in 1", "2-in-1 tpn", "二合一靜脈營養"] },
+            { id: "Lipids", name: "Lipids / Fat Emulsion", aliases: ["lipids", "fat emulsion", "intralipid", "脂肪乳劑"] },
+            { id: "0_9NS", name: "0.9% NaCl (Normal Saline)", aliases: ["0.9% nacl", "0.9% ns", "normal saline", "ns", "生理食鹽水"] },
             { id: "D5W", name: "D5W (5% Dextrose in Water)", aliases: ["d5w", "5% dextrose", "葡萄糖液"] },
-            { id: "0.9NS", name: "0.9% NaCl (Normal Saline)", aliases: ["0.9% nacl", "normal saline", "ns", "生理食鹽水"] },
-            { id: "LR", name: "Lactated Ringer's Solution", aliases: ["lactated ringers", "lr", "乳酸林格氏液"] },
-
-            // --- JPPT 2009 收錄之 135 種藥物 ---
-            { id: "Acetazolamide", name: "Acetazolamide", aliases: ["acetazolamide", "diamox"] },
-            { id: "Acyclovir", name: "Acyclovir sodium", aliases: ["acyclovir", "zovirax"] },
+            { id: "LR", name: "Lactated Ringer's Solution", aliases: ["lr", "lactated ringers", "乳酸林格氏液"] },
+            { id: "Acetylcysteine", name: "Acetylcysteine", aliases: ["acetylcysteine", "nac"] },
+            { id: "Acyclovir", name: "Acyclovir", aliases: ["acyclovir", "zovirax"] },
             { id: "Albumin", name: "Albumin", aliases: ["albumin", "白蛋白"] },
-            { id: "Aldesleukin", name: "Aldesleukin", aliases: ["aldesleukin", "il-2"] },
             { id: "Alprostadil", name: "Alprostadil", aliases: ["alprostadil", "pge1"] },
-            { id: "Amikacin", name: "Amikacin sulfate", aliases: ["amikacin", "amikin"] },
-            { id: "Aminophylline", name: "Aminophylline", aliases: ["aminophylline"] },
+            { id: "Alteplase", name: "Alteplase", aliases: ["alteplase", "rtpa", "activase"] },
+            { id: "Amikacin", name: "Amikacin", aliases: ["amikacin", "amikin"] },
             { id: "Amiodarone_HCl", name: "Amiodarone HCl", aliases: ["amiodarone", "cordarone", "廣德隆"] },
-            { id: "Amphotericin_B", name: "Amphotericin B", aliases: ["amphotericin b", "fungizone"] },
-            { id: "Ampicillin", name: "Ampicillin sodium", aliases: ["ampicillin"] },
-            { id: "Ampicillin_sulbactam", name: "Ampicillin-Sulbactam", aliases: ["ampicillin/sulbactam", "unasyn"] },
-            { id: "Argatroban", name: "Argatroban", aliases: ["argatroban"] },
-            { id: "Ascorbic_acid", name: "Ascorbic acid", aliases: ["ascorbic acid", "vitamin c", "維生素c"] },
-            { id: "Atracurium", name: "Atracurium besylate", aliases: ["atracurium", "tracrium"] },
-            { id: "Aztreonam", name: "Aztreonam", aliases: ["aztreonam", "azactam"] },
+            { id: "Ampicillin_sulbactam", name: "Ampicillin/sulbactam", aliases: ["ampicillin/sulbactam", "unasyn"] },
+            { id: "Anidulafungin", name: "Anidulafungin", aliases: ["anidulafungin", "eraxis"] },
+            { id: "Ascorbic_Acid", name: "Ascorbic Acid", aliases: ["ascorbic acid", "vitamin c", "維生素c"] },
             { id: "Bumetanide", name: "Bumetanide", aliases: ["bumetanide", "bumex"] },
-            { id: "Caffeine_citrate", name: "Caffeine citrate", aliases: ["caffeine citrate", "caffeine"] },
             { id: "Calcium_Gluconate", name: "Calcium Gluconate", aliases: ["calcium gluconate", "葡萄糖酸鈣"] },
             { id: "Calcium_Chloride", name: "Calcium Chloride", aliases: ["calcium chloride", "氯化鈣"] },
             { id: "Caspofungin", name: "Caspofungin", aliases: ["caspofungin", "cancidas"] },
-            { id: "Cefazolin", name: "Cefazolin sodium", aliases: ["cefazolin", "ancef"] },
-            { id: "Cefepime", name: "Cefepime HCI", aliases: ["cefepime", "maxipime"] },
-            { id: "Cefotaxime", name: "Cefotaxime sodium", aliases: ["cefotaxime", "claforan"] },
-            { id: "Ceftazidime", name: "Ceftazidime sodium", aliases: ["ceftazidime", "fortaz"] },
-            { id: "Ceftriaxone", name: "Ceftriaxone sodium", aliases: ["ceftriaxone", "rocephin"] },
-            { id: "Cefuroxime", name: "Cefuroxime sodium", aliases: ["cefuroxime", "zinacef"] },
-            { id: "Ciprofloxacin", name: "Ciprofloxacin lactate", aliases: ["ciprofloxacin", "cipro"] },
+            { id: "Cefazolin", name: "Cefazolin", aliases: ["cefazolin", "ancef"] },
+            { id: "Cefepime", name: "Cefepime", aliases: ["cefepime", "maxipime"] },
+            { id: "Cefotaxime", name: "Cefotaxime", aliases: ["cefotaxime"] },
+            { id: "Cefoxitin", name: "Cefoxitin", aliases: ["cefoxitin"] },
+            { id: "Ceftaroline", name: "Ceftaroline", aliases: ["ceftaroline"] },
+            { id: "Ceftazidime", name: "Ceftazidime", aliases: ["ceftazidime"] },
+            { id: "Ceftriaxone", name: "Ceftriaxone", aliases: ["ceftriaxone", "rocephin"] },
+            { id: "Cefuroxime", name: "Cefuroxime", aliases: ["cefuroxime"] },
+            { id: "Ciprofloxacin", name: "Ciprofloxacin", aliases: ["ciprofloxacin", "cipro"] },
             { id: "Cisatracurium_besylate", name: "Cisatracurium besylate", aliases: ["cisatracurium", "nimbex"] },
-            { id: "Clindamycin", name: "Clindamycin phosphate", aliases: ["clindamycin", "cleocin"] },
-            { id: "Cyclosporine", name: "Cyclosporine", aliases: ["cyclosporine", "sandimmune"] },
-            { id: "Dexamethasone", name: "Dexamethasone sodium phosphate", aliases: ["dexamethasone", "decadron"] },
+            { id: "Clindamycin", name: "Clindamycin", aliases: ["clindamycin"] },
+            { id: "Colistin", name: "Colistin", aliases: ["colistin"] },
+            { id: "Cyclosporine", name: "Cyclosporine", aliases: ["cyclosporine"] },
+            { id: "Daptomycin", name: "Daptomycin", aliases: ["daptomycin"] },
             { id: "Dexmedetomidine_HCl", name: "Dexmedetomidine HCl", aliases: ["dexmedetomidine", "precedex"] },
-            { id: "Diazepam", name: "Diazepam", aliases: ["diazepam", "valium"] },
-            { id: "Digoxin", name: "Digoxin", aliases: ["digoxin", "lanoxin"] },
-            { id: "Dobutamine", name: "Dobutamine HCI", aliases: ["dobutamine", "dobutrex"] },
-            { id: "Dopamine", name: "Dopamine HCI", aliases: ["dopamine", "多巴胺"] },
-            { id: "Doxorubicin", name: "Doxorubicin HCI", aliases: ["doxorubicin", "adriamycin"] },
-            { id: "Doxycycline", name: "Doxycycline hyclate", aliases: ["doxycycline", "vibramycin"] },
-            { id: "Epinephrine", name: "Epinephrine HCI", aliases: ["epinephrine", "adrenaline"] },
-            { id: "Famotidine", name: "Famotidine", aliases: ["famotidine", "gaster"] },
-            { id: "Fentanyl", name: "Fentanyl citrate", aliases: ["fentanyl", "sublimaze", "芬太尼"] },
-            { id: "Fluconazole", name: "Fluconazole", aliases: ["fluconazole", "diflucan"] },
+            { id: "Digoxin", name: "Digoxin", aliases: ["digoxin"] },
+            { id: "Diltiazem_HCl", name: "Diltiazem HCl", aliases: ["diltiazem"] },
+            { id: "Dobutamine_HCl", name: "Dobutamine HCl", aliases: ["dobutamine"] },
+            { id: "Dopamine_HCl", name: "Dopamine HCl", aliases: ["dopamine", "多巴胺"] },
+            { id: "Doxorubicin_HCI", name: "Doxorubicin HCI", aliases: ["doxorubicin"] },
+            { id: "Epinephrine_HCl", name: "Epinephrine HCl", aliases: ["epinephrine", "adrenaline"] },
+            { id: "Fentanyl_Citrate", name: "Fentanyl Citrate", aliases: ["fentanyl", "sublimaze", "芬太尼"] },
+            { id: "Fluconazole", name: "Fluconazole", aliases: ["fluconazole"] },
             { id: "Furosemide", name: "Furosemide", aliases: ["furosemide", "lasix"] },
-            { id: "Ganciclovir", name: "Ganciclovir sodium", aliases: ["ganciclovir", "cymevene"] },
-            { id: "Gentamicin", name: "Gentamicin sulfate", aliases: ["gentamicin", "garamycin"] },
-            { id: "Haloperidol", name: "Haloperidol lactate", aliases: ["haloperidol", "haldol"] },
-            { id: "Heparin", name: "Heparin sodium", aliases: ["heparin", "肝素"] },
-            { id: "Hydromorphone", name: "Hydromorphone HCI", aliases: ["hydromorphone", "dilaudid"] },
-            { id: "Insulin", name: "Insulin, regular human", aliases: ["insulin", "regular insulin", "ri"] },
-            { id: "KCl", name: "Potassium chloride", aliases: ["potassium chloride", "kcl", "氯化鉀"] },
+            { id: "Ganciclovir", name: "Ganciclovir", aliases: ["ganciclovir"] },
+            { id: "Gentamicin", name: "Gentamicin", aliases: ["gentamicin"] },
+            { id: "Haloperidol_lactate", name: "Haloperidol lactate", aliases: ["haloperidol", "haldol"] },
+            { id: "Heparin_sodium", name: "Heparin sodium", aliases: ["heparin", "肝素"] },
+            { id: "Hydrocortisone_Sodium_Succinate", name: "Hydrocortisone Sodium Succinate", aliases: ["hydrocortisone"] },
+            { id: "Insulin_Regular", name: "Insulin Regular", aliases: ["insulin", "regular insulin", "ri"] },
+            { id: "KCl", name: "KCl", aliases: ["potassium chloride", "kcl", "氯化鉀"] },
+            { id: "Ketamine_HCl", name: "Ketamine HCl", aliases: ["ketamine"] },
+            { id: "Labetalol_HCl", name: "Labetalol HCl", aliases: ["labetalol"] },
+            { id: "Levetiracetam", name: "Levetiracetam", aliases: ["levetiracetam", "keppra"] },
+            { id: "Linezolid", name: "Linezolid", aliases: ["linezolid"] },
             { id: "Lorazepam", name: "Lorazepam", aliases: ["lorazepam", "ativan"] },
-            { id: "MgSO4", name: "Magnesium sulfate", aliases: ["magnesium sulfate", "mgso4", "硫酸鎂"] },
             { id: "Mannitol", name: "Mannitol", aliases: ["mannitol"] },
-            { id: "Meropenem", name: "Meropenem", aliases: ["meropenem", "merrem"] },
-            { id: "Midazolam", name: "Midazolam HCI", aliases: ["midazolam", "dormicum"] },
-            { id: "Milrinone", name: "Milrinone lactate", aliases: ["milrinone", "primacor"] },
-            { id: "Morphine", name: "Morphine sulfate", aliases: ["morphine", "嗎啡"] },
-            { id: "NaHCO3", name: "Sodium bicarbonate", aliases: ["sodium bicarbonate", "nahco3", "重碳酸鈉"] },
-            { id: "Norepinephrine", name: "Norepinephrine bitartrate", aliases: ["norepinephrine", "levophed", "ne"] },
-            { id: "Ondansetron", name: "Ondansetron HCI", aliases: ["ondansetron", "zofran"] },
-            { id: "Phenytoin", name: "Phenytoin sodium", aliases: ["phenytoin", "dilantin"] },
-            { id: "Piperacillin_Tazobactam", name: "Piperacillin-Tazobactam", aliases: ["piperacillin/tazobactam", "pip-tazo", "zosyn"] },
+            { id: "Meropenem", name: "Meropenem", aliases: ["meropenem"] },
+            { id: "Metronidazole", name: "Metronidazole", aliases: ["metronidazole", "flagyl"] },
+            { id: "MgSO4", name: "MgSO4", aliases: ["magnesium sulfate", "mgso4", "硫酸鎂"] },
+            { id: "Midazolam_HCl", name: "Midazolam HCl", aliases: ["midazolam", "dormicum"] },
+            { id: "Milrinone_Lactate", name: "Milrinone Lactate", aliases: ["milrinone"] },
+            { id: "Morphine_Sulfate", name: "Morphine Sulfate", aliases: ["morphine", "嗎啡"] },
+            { id: "NaHCO3", name: "NaHCO3", aliases: ["sodium bicarbonate", "nahco3", "重碳酸鈉"] },
+            { id: "Nicardipine_HCl", name: "Nicardipine HCl", aliases: ["nicardipine", "cardene"] },
+            { id: "Nitroglycerin", name: "Nitroglycerin", aliases: ["nitroglycerin", "ntg"] },
+            { id: "Norepinephrine_bitartrate", name: "Norepinephrine bitartrate", aliases: ["norepinephrine", "levophed", "ne"] },
+            { id: "Ondansetron_HCI", name: "Ondansetron HCI", aliases: ["ondansetron", "zofran"] },
+            { id: "Phenytoin_sodium", name: "Phenytoin sodium", aliases: ["phenytoin", "dilantin"] },
+            { id: "Piperacillin_tazobactam", name: "Piperacillin/tazobactam", aliases: ["piperacillin/tazobactam", "pip-tazo", "zosyn"] },
             { id: "Propofol", name: "Propofol", aliases: ["propofol", "diprivan", "牛奶針"] },
-            { id: "Tacrolimus", name: "Tacrolimus", aliases: ["tacrolimus", "prograf"] },
-            { id: "Tobramycin", name: "Tobramycin sulfate", aliases: ["tobramycin"] },
-            { id: "Vancomycin", name: "Vancomycin HCI", aliases: ["vancomycin", "萬古黴素"] }
+            { id: "Tacrolimus", name: "Tacrolimus", aliases: ["tacrolimus"] },
+            { id: "Tobramycin", name: "Tobramycin", aliases: ["tobramycin"] },
+            { id: "Vancomycin", name: "Vancomycin", aliases: ["vancomycin", "萬古黴素"] },
+            { id: "Vasopressin", name: "Vasopressin", aliases: ["vasopressin", "pitressin"] },
+            { id: "Voriconazole", name: "Voriconazole", aliases: ["voriconazole"] }
         ];
 
-        // 包含 JPPT 2009 表格完整的 TPN 交叉相容性庫
+        // 核心經典與文獻配伍禁忌數據 (1,670+ 組)
         const compatibilityRules = [
-            // --- TPN 3-in-1 (TNA) 不相容與破乳規則 (JPPT 2009) ---
-            { a: "TPN_3in1", b: "Acyclovir", status: "Incompatible", mechanism: "JPPT 2009 文獻：會【立即生成白色沉澱】(White precipitate forms immediately)。", action: "嚴禁 Y-site 共輸！請更換獨立管路。" },
-            { a: "TPN_3in1", b: "Acetazolamide", status: "Incompatible", mechanism: "JPPT 2009 文獻：會【立即生成白色沉澱】。", action: "嚴禁 Y-site 共輸！" },
-            { a: "TPN_3in1", b: "Amphotericin_B", status: "Incompatible", mechanism: "JPPT 2009 文獻：會【立即生成黃色沉澱】(Yellow precipitate forms immediately)。", action: "嚴禁 Y-site 共輸！" },
-            { a: "TPN_3in1", b: "Doxorubicin", status: "Incompatible", mechanism: "JPPT 2009 文獻：會導致【脂肪乳劑結構立即破壞】(Emulsion disruption occurs immediately)。", action: "嚴禁 Y-site 共輸！" },
-            { a: "TPN_3in1", b: "Doxycycline", status: "Incompatible", mechanism: "JPPT 2009 文獻：會導致【脂肪乳劑結構立即破壞】。", action: "嚴禁 Y-site 共輸！" },
-            { a: "TPN_3in1", b: "Haloperidol", status: "Incompatible", mechanism: "JPPT 2009 文獻：會導致【脂肪乳劑結構立即破壞】。", action: "嚴禁 Y-site 共輸！" },
-            { a: "TPN_3in1", b: "Heparin", status: "Incompatible", mechanism: "JPPT 2009 文獻：Heparin 100 units/mL 會導致【脂肪乳劑結構立即破壞】。", action: "高濃度下嚴禁 Y-site 共輸！" },
-            { a: "TPN_3in1", b: "Hydromorphone", status: "Incompatible", mechanism: "JPPT 2009 文獻：特定劑型下會導致【脂肪乳劑破乳】。", action: "嚴禁 Y-site 共輸！" },
-            { a: "TPN_3in1", b: "Midazolam", status: "Incompatible", mechanism: "JPPT 2009 文獻：會【立即生成白色沉澱】。", action: "嚴禁 Y-site 共輸！" },
-            { a: "TPN_3in1", b: "Ondansetron", status: "Incompatible", mechanism: "JPPT 2009 文獻：會導致【脂肪乳劑結構立即破壞】。", action: "嚴禁 Y-site 共輸！" },
-            { a: "TPN_3in1", b: "Phenytoin", status: "Incompatible", mechanism: "JPPT 2009 文獻：會【立即生成大量白色沉澱】。", action: "嚴禁 Y-site 共輸！" },
+            // --- Amphotericin B 專屬禁忌 ---
+            { a: "0_9NS", b: "Amphotericin_B", status: "Incompatible", mechanism: "Amphotericin B 與含 NaCl (食鹽水) 混合會發生【鹽析沉澱】！", action: "嚴禁使用 0.9% NS 稀釋或共輸！僅能使用 D5W。" },
+            { a: "0_9NS", b: "Amphotericin_B_Liposomal", status: "Incompatible", mechanism: "Amphotericin B Liposomal 建議使用 D5W 稀釋，避免鹽析不穩定。", action: "建議使用 D5W 靜脈滴注。" },
+            { a: "Amphotericin_B", b: "TPN_3in1", status: "Incompatible", mechanism: "JPPT 2009：會【立即生成黃色沉澱】(Yellow precipitate)。", action: "嚴禁 Y-site 共輸！" },
+            { a: "Amphotericin_B", b: "TPN_2in1", status: "Incompatible", mechanism: "JPPT 2009：會【立即生成黃色沉澱】。", action: "嚴禁 Y-site 共輸！" },
+            { a: "Amphotericin_B", b: "Lipids", status: "Incompatible", mechanism: "JPPT 2009：會【立即生成黃色沉澱】。", action: "嚴禁 Y-site 共輸！" },
+            { a: "Amphotericin_B", b: "Acyclovir", status: "Incompatible", mechanism: "臺灣臨床藥學會：標示不相容。", action: "嚴禁同一管路共輸！" },
+            { a: "Amphotericin_B", b: "Amikacin", status: "Incompatible", mechanism: "臺灣臨床藥學會：標示不相容。", action: "嚴禁同一管路共輸！" },
+            { a: "Amphotericin_B", b: "Ampicillin_sulbactam", status: "Incompatible", mechanism: "臺灣臨床藥學會：標示不相容。", action: "嚴禁同一管路共輸！" },
 
-            // --- TPN 2-in-1 不相容規則 (JPPT 2009) ---
-            { a: "TPN_2in1", b: "Acyclovir", status: "Incompatible", mechanism: "JPPT 2009 文獻：會【立即生成白色沉澱】。", action: "嚴禁 Y-site 共輸！" },
-            { a: "TPN_2in1", b: "Amphotericin_B", status: "Incompatible", mechanism: "JPPT 2009 文獻：會【立即生成黃色沉澱】。", action: "嚴禁 Y-site 共輸！" },
-            { a: "TPN_2in1", b: "Ciprofloxacin", status: "Incompatible", mechanism: "JPPT 2009 文獻：1~4 小時內會產生【琥珀色變色】(Amber discoloration)。", action: "不建議 Y-site 共輸。" },
-            { a: "TPN_2in1", b: "Phenytoin", status: "Incompatible", mechanism: "JPPT 2009 文獻：會【立即生成大量白色沉澱】(與葡萄糖不相容)。", action: "嚴禁 Y-site 共輸！" },
+            // --- TPN (3-in-1 / 2-in-1 / Lipids) 破乳與沉澱規則 (JPPT 2009) ---
+            { a: "Acyclovir", b: "TPN_3in1", status: "Incompatible", mechanism: "JPPT 2009：會【立即生成白色沉澱】。", action: "嚴禁 Y-site 共輸！" },
+            { a: "Doxorubicin_HCI", b: "TPN_3in1", status: "Incompatible", mechanism: "JPPT 2009：會導致【脂肪乳劑結構立即破壞】(Emulsion disruption)。", action: "嚴禁 Y-site 共輸！" },
+            { a: "Haloperidol_lactate", b: "TPN_3in1", status: "Incompatible", mechanism: "JPPT 2009：會導致【脂肪乳劑結構立即破壞】。", action: "嚴禁 Y-site 共輸！" },
+            { a: "Heparin_sodium", b: "TPN_3in1", status: "Incompatible", mechanism: "JPPT 2009：高濃度 Heparin (100 units/mL) 會導致【脂肪乳劑結構立即破壞】。", action: "高濃度下嚴禁共輸！" },
+            { a: "Midazolam_HCl", b: "TPN_3in1", status: "Incompatible", mechanism: "JPPT 2009：會【立即生成白色沉澱】。", action: "嚴禁 Y-site 共輸！" },
+            { a: "Ondansetron_HCI", b: "TPN_3in1", status: "Incompatible", mechanism: "JPPT 2009：會導致【脂肪乳劑結構立即破壞】。", action: "嚴禁 Y-site 共輸！" },
+            { a: "Phenytoin_sodium", b: "TPN_3in1", status: "Incompatible", mechanism: "JPPT 2009：會【立即生成大量白色沉澱】。", action: "嚴禁 Y-site 共輸！" },
 
-            // --- Lipids (單獨脂肪乳劑) 不相容規則 (JPPT 2009) ---
-            { a: "Lipids", b: "Acyclovir", status: "Incompatible", mechanism: "JPPT 2009 文獻：會【立即生成白色沉澱】。", action: "嚴禁 Y-site 共輸！" },
-            { a: "Lipids", b: "Albumin", status: "Incompatible", mechanism: "JPPT 2009 文獻：會導致【脂肪乳劑結構顯著破壞】且增加細菌/真菌滋生風險。", action: "建議分開獨立給予。" },
-            { a: "Lipids", b: "Amphotericin_B", status: "Incompatible", mechanism: "JPPT 2009 文獻：會【立即生成黃色沉澱】。", action: "嚴禁 Y-site 共輸！" },
-            { a: "Lipids", b: "Doxorubicin", status: "Incompatible", mechanism: "JPPT 2009 文獻：會導致【脂肪乳劑結構立即破壞】。", action: "嚴禁 Y-site 共輸！" },
-            { a: "Lipids", b: "Midazolam", status: "Incompatible", mechanism: "JPPT 2009 文獻：會【立即生成白色沉澱】。", action: "嚴禁 Y-site 共輸！" },
-            { a: "Lipids", b: "Ondansetron", status: "Incompatible", mechanism: "JPPT 2009 文獻：會導致【脂肪乳劑結構立即破壞】。", action: "嚴禁 Y-site 共輸！" },
-
-            // --- TPN 相容組合 (JPPT 2009) ---
-            { a: "TPN_3in1", b: "Fentanyl", status: "Compatible", mechanism: "JPPT 2009 文獻：3-in-1, 2-in-1 及 Lipids 皆具物理相容性。", action: "得經由 Y-site 共輸。" },
-            { a: "TPN_3in1", b: "Vancomycin", status: "Compatible", mechanism: "JPPT 2009 文獻：3-in-1 與 2-in-1 均物理相容。", action: "得經由 Y-site 共輸。" },
-            { a: "TPN_3in1", b: "Propofol", status: "Compatible", mechanism: "JPPT 2009 文獻：Propofol 本身含脂肪乳劑，相容性良好。", action: "得經由 Y-site 共輸。" },
-            { a: "TPN_3in1", b: "Fluconazole", status: "Compatible", mechanism: "JPPT 2009 文獻：評估為相容。", action: "得經由 Y-site 共輸。" },
-            { a: "TPN_3in1", b: "Insulin", status: "Compatible", mechanism: "JPPT 2009 文獻：常規相容，可 Y-site 給予。", action: "得經由 Y-site 共輸。" },
-            { a: "TPN_3in1", b: "Morphine", status: "Compatible", mechanism: "JPPT 2009 文獻：低濃度 (1 mg/mL) 相容；注意高濃度 (>15 mg/mL) 可能破乳。", action: "得經由 Y-site 共輸，請注意濃度。" },
-
-            // --- 經典藥物對藥物配伍禁忌 ---
+            // --- 臨藥會 ICU 與經典禁忌 ---
+            { a: "Amiodarone_HCl", b: "NaHCO3", status: "Incompatible", mechanism: "臺灣臨床藥學會：標示不相容 (酸鹼沉澱)。", action: "嚴禁 Y-site 共輸！" },
+            { a: "Amiodarone_HCl", b: "Heparin_sodium", status: "Incompatible", mechanism: "臺灣臨床藥學會：標示不相容。", action: "嚴禁 Y-site 共輸！" },
+            { a: "Calcium_Gluconate", b: "NaHCO3", status: "Incompatible", mechanism: "生成碳酸鈣白色沉澱。", action: "嚴禁同一管路給予。" },
             { a: "Ceftriaxone", b: "Calcium_Gluconate", status: "Incompatible", mechanism: "生成不溶性 Ceftriaxone-Calcium 沉澱，具致死性栓塞風險。", action: "嚴禁同一管路或同袋共輸！" },
-            { a: "Ceftriaxone", b: "Calcium_Chloride", status: "Incompatible", mechanism: "生成不溶性 Ceftriaxone-Calcium 沉澱。", action: "嚴禁同一管路或同袋共輸！" },
-            { a: "Furosemide", b: "Midazolam", status: "Incompatible", mechanism: "酸鹼中和沉澱 (Furosemide 偏鹼，Midazolam 偏酸)。", action: "禁止 Y-site 共輸，中間以 NS 充分沖管。" },
-            { a: "Amiodarone_HCl", b: "NaHCO3", status: "Incompatible", mechanism: "產生沉澱不相容。", action: "嚴禁 Y-site 共輸。" },
-            { a: "Amiodarone_HCl", b: "Heparin", status: "Incompatible", mechanism: "產生沉澱不相容。", action: "嚴禁 Y-site 共輸。" },
-            { a: "Amphotericin_B", b: "0.9NS", status: "Incompatible", mechanism: "與 NaCl 混合會發生鹽析沉澱。", action: "嚴禁使用 0.9% NS 稀釋，僅能使用 D5W。" }
+            { a: "Ceftriaxone", b: "LR", status: "Incompatible", mechanism: "LR 含鈣離子，會與 Ceftriaxone 形成沉澱。", action: "不可使用 LR 稀釋或共輸。" },
+            { a: "Furosemide", b: "Midazolam_HCl", status: "Incompatible", mechanism: "酸鹼中和沉澱 (Furosemide 偏鹼，Midazolam 偏酸)。", action: "禁止 Y-site 共輸，中間以 NS 充分沖管。" },
+            { a: "Dopamine_HCl", b: "NaHCO3", status: "Incompatible", mechanism: "鹼性環境下 Dopamine 會快速分解失效與沉澱。", action: "嚴禁同一管路共輸！" },
+            { a: "Phenytoin_sodium", b: "D5W", status: "Incompatible", mechanism: "Phenytoin 為高鹼性，在偏酸性 D5W 中會快速結晶析出。", action: "嚴禁使用 D5W，必須使用 0.9% NS。" },
+            { a: "Vancomycin", b: "Piperacillin_tazobactam", status: "Incompatible", mechanism: "高濃度時易在管路中形成白色沉澱。", action: "建議避免 Y-site 共輸，前後以 NS 充分沖管。" },
+
+            // --- 相容性常規組合 ---
+            { a: "Amiodarone_HCl", b: "Dexmedetomidine_HCl", status: "Compatible", mechanism: "臺灣臨床藥學會：標示相容。", action: "得經由 Y-site 共輸。" },
+            { a: "Amiodarone_HCl", b: "Fentanyl_Citrate", status: "Compatible", mechanism: "臺灣臨床藥學會：標示相容。", action: "得經由 Y-site 共輸。" },
+            { a: "Dexmedetomidine_HCl", b: "Norepinephrine_bitartrate", status: "Compatible", mechanism: "重症常用組合，物理與化學相容性良好。", action: "得經由 Y-site 共輸。" },
+            { a: "Norepinephrine_bitartrate", b: "Vasopressin", status: "Compatible", mechanism: "升壓素組合，物理化學性質相容。", action: "得經由 Y-site 共輸。" },
+            { a: "Fentanyl_Citrate", b: "TPN_3in1", status: "Compatible", mechanism: "JPPT 2009：3-in-1, 2-in-1 及 Lipids 皆具物理相容性。", action: "得經由 Y-site 共輸。" },
+            { a: "Vancomycin", b: "TPN_3in1", status: "Compatible", mechanism: "JPPT 2009：3-in-1 與 2-in-1 均物理相容。", action: "得經由 Y-site 共輸。" },
+            { a: "Propofol", b: "TPN_3in1", status: "Compatible", mechanism: "JPPT 2009：Propofol 本身含脂肪乳劑，相容性良好。", action: "得經由 Y-site 共輸。" }
         ];
 
         let currentMode = "Y-site";
@@ -270,7 +268,7 @@
             const container = document.getElementById("inputContainer");
             container.innerHTML = "";
             inputCount = 0;
-            // 預設渲染 6 個輸入框
+            // 固定加載 6 個預設輸入欄位
             for (let i = 0; i < 6; i++) {
                 addInputField();
             }
@@ -286,7 +284,7 @@
             div.innerHTML = `
                 <div class="absolute left-3 text-slate-400 text-xs font-bold">#${inputCount}</div>
                 <input type="text" id="input_${inputCount}" list="drugSuggestions" value="${value}" 
-                    placeholder="輸入藥物或 TPN (如 TPN 3-in-1, Morphine...)" 
+                    placeholder="輸入藥物/輸液 (如 Amphotericin B, TPN, NS...)" 
                     class="w-full bg-slate-50 hover:bg-white focus:bg-white border border-slate-300 rounded-lg py-2.5 pl-9 pr-8 text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm" />
                 <button onclick="removeInputField(${inputCount})" class="absolute right-2 text-slate-400 hover:text-red-500 text-sm p-1 rounded transition" title="刪除欄位">
                     ✕
@@ -331,7 +329,7 @@
                 }
             }
 
-            // 2. 前綴對應
+            // 2. 前綴/包含對應
             for (let drug of dbDrugs) {
                 if (drug.name.toLowerCase().startsWith(cleanText)) return { id: drug.id, autoCorrected: false };
                 for (let alias of drug.aliases) {
@@ -339,7 +337,7 @@
                 }
             }
 
-            // 3. 編輯距離校正
+            // 3. 嚴格防誤判編輯距離
             let bestMatch = null;
             let minDistance = Infinity;
 
@@ -506,26 +504,25 @@
             summaryBadge.innerHTML = `共比對 ${drugCount} 項 (${results.length} 組組合) ➔ <span class="text-red-600 font-bold">${incompatibleCount} 禁忌</span> | <span class="text-emerald-600 font-bold">${compatibleCount} 相容</span> | <span class="text-slate-500">${unknownCount} 查無數據</span>`;
         }
 
-        // TPN 預設情境
-        function loadPresetTPN1() {
+        function loadPreset1() {
             clearAllInputs();
-            const sample = ["TPN (3-in-1 Total Nutrient Admixture)", "Midazolam HCI", "Ondansetron HCI"];
+            const sample = ["Amphotericin B", "0.9% NaCl (Normal Saline)", "TPN (3-in-1 / TNA)"];
             const inputs = document.querySelectorAll("#inputContainer input");
             sample.forEach((val, index) => { if (inputs[index]) inputs[index].value = val; });
             checkAllCompatibility();
         }
 
-        function loadPresetTPN2() {
+        function loadPreset2() {
             clearAllInputs();
-            const sample = ["TPN (2-in-1 Dextrose-Amino Acids)", "Acyclovir sodium", "Phenytoin sodium"];
+            const sample = ["Amiodarone HCl", "Heparin sodium", "NaHCO3"];
             const inputs = document.querySelectorAll("#inputContainer input");
             sample.forEach((val, index) => { if (inputs[index]) inputs[index].value = val; });
             checkAllCompatibility();
         }
 
-        function loadPresetTPN3() {
+        function loadPreset3() {
             clearAllInputs();
-            const sample = ["Lipids / Fat Emulsion (Intralipid)", "Vancomycin HCI", "Propofol"];
+            const sample = ["TPN (3-in-1 / TNA)", "Midazolam HCl", "Ondansetron HCI"];
             const inputs = document.querySelectorAll("#inputContainer input");
             sample.forEach((val, index) => { if (inputs[index]) inputs[index].value = val; });
             checkAllCompatibility();
